@@ -1,5 +1,4 @@
-FROM node:18-alpine
+FROM openjdk:17-jdk-slim
 WORKDIR /app
-COPY index.js .
-EXPOSE 3000
-CMD ["node", "index.js"]
+COPY target/*.jar app.jar
+ENTRYPOINT ["java","-jar","app.jar"]
