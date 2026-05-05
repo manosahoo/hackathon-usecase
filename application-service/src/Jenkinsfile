@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    environment {
+        PROJECT_ID = "project-e102b4fc-db1c-4d68-9f1"
+        IMAGE_NAME = "gcr.io/${PROJECT_ID}/node-app"
+        CLUSTER_NAME = "my-cluster"
+        ZONE = "us-central1-a"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/manosahoo/hackathon-usecase.git'
+            }
+        }
+
+        stage('Authenticate GCP') {
+            steps {
+                withCredentials([file(credentialsId: 'gcp-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    sh '''
+                    gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+                    gcloud config set project $PROJECT_ID
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                docker build -t $IMAGE_NAME:$BUILD_NUMBER .
+                '''
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                sh '''
+                gcloud auth configure-docker -q
+                docker push $IMAGE_NAME:$BUILD_NUMBER
+                '''
+            }
+        }
+
+        stage('Deploy to GKE') {
+            steps {
+                withCredentials([file(credentialsId: 'gcp-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    sh '''
+                    gcloud container clusters get-credentials $CLUSTER_NAME --zone $ZONE
+
+                    sed -i "s|IMAGE_TAG|$BUILD_NUMBER|g" deployment.yaml
+
+                    kubectl apply -f deployment.yaml
+                    kubectl apply -f service.yaml
+                    '''
+                }
+            }
+        }
+    }
+}
