@@ -20,20 +20,25 @@ spec:
 
   stages {
 
-    stage('Check Tools') {
+    stage('Authenticate GCP') {
       steps {
-        container('gcloud') {
-          sh 'gcloud --version'
+        withCredentials([file(credentialsId: 'gcp-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+          sh '''
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+          gcloud config set project project-e102b4fc-db1c-4d68-9f1
+          '''
         }
       }
     }
 
     stage('Build Image') {
       steps {
-        container('gcloud') {
+        withCredentials([file(credentialsId: 'gcp-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
           sh '''
           gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-          gcloud builds submit --tag gcr.io/project-e102b4fc-db1c-4d68-9f1/node-app:$BUILD_NUMBER
+
+          gcloud builds submit \
+            --tag gcr.io/project-e102b4fc-db1c-4d68-9f1/node-app:$BUILD_NUMBER
           '''
         }
       }
