@@ -15,7 +15,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
+                git 'https://github.com/manosahoo/hackathon-usecase.git'
             }
         }
 
