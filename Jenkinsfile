@@ -12,10 +12,10 @@ pipeline {
         
 stage('Build Image') {
     steps {
-        sh '''
-        gcloud builds submit \
-          --tag gcr.io/project-e102b4fc-db1c-4d68-9f1/node-app:$BUILD_NUMBER
-        '''
+        container('gcloud') {
+    sh 'gcloud builds submit --tag gcr.io/project-e102b4fc-db1c-4d68-9f1/node-app:$BUILD_NUMBER'
+}
+        
     }
 }
         stage('Push Image') {
