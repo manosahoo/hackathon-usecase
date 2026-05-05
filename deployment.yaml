@@ -1,0 +1,6 @@
+containers:
+- name: gcloud
+  image: google/cloud-sdk:latest
+  command:
+  - cat
+  tty: true
