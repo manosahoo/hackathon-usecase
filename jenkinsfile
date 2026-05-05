@@ -1,0 +1,75 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "your-dockerhub-username/java-app"
+        TAG = "${BUILD_NUMBER}"
+    }
+
+    tools {
+        maven 'Maven'   // configured in Jenkins
+        jdk 'JDK17'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/manosahoo/hackathon-usecase.git'
+            }
+        }
+
+        stage('Build with Maven') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $IMAGE_NAME:$TAG .'
+            }
+        }
+
+        stage('Login to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-creds',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                sh 'docker push $IMAGE_NAME:$TAG'
+            }
+        }
+
+        stage('Deploy (Optional)') {
+            steps {
+                echo "Deploy to Kubernetes or server"
+                // Example:
+                // kubectl apply -f deployment.yaml
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Build & Deployment Successful 🎉"
+        }
+        failure {
+            echo "Build Failed ❌"
+        }
+    }
+}
