@@ -7,7 +7,7 @@ pipeline {
     }
 
     tools {
-        maven 'Maven'   // configured in Jenkins
+        maven 'Maven'
         jdk 'JDK17'
     }
 
@@ -15,19 +15,13 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git 'https://github.com/manosahoo/hackathon-usecase.git'
+                checkout scm
             }
         }
 
-        stage('Build with Maven') {
+        stage('Build & Test') {
             steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh 'mvn test'
+                sh 'mvn clean verify'
             }
         }
 
@@ -41,10 +35,10 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'docker-creds',
-                    usernameVariable: 'manosahoo',
-                    passwordVariable: 'Mamikuni@2027'
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 }
             }
         }
@@ -52,19 +46,23 @@ pipeline {
         stage('Push Image') {
             steps {
                 sh 'docker push $IMAGE_NAME:$TAG'
+                sh 'docker tag $IMAGE_NAME:$TAG $IMAGE_NAME:latest'
+                sh 'docker push $IMAGE_NAME:latest'
             }
         }
 
-        stage('Deploy (Optional)') {
+        stage('Deploy') {
             steps {
-                echo "Deploy to Kubernetes or server"
-                // Example:
-                // kubectl apply -f deployment.yaml
+                echo "Deploy to Kubernetes"
+                // sh 'kubectl apply -f deployment.yaml'
             }
         }
     }
 
     post {
+        always {
+            junit 'target/surefire-reports/*.xml'
+        }
         success {
             echo "Build & Deployment Successful 🎉"
         }
