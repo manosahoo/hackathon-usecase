@@ -4,8 +4,8 @@ pipeline {
     environment {
         PROJECT_ID = "project-e102b4fc-db1c-4d68-9f1"
         IMAGE_NAME = "gcr.io/${PROJECT_ID}/node-app"
-        CLUSTER_NAME = "my-cluster"
-        ZONE = "us-central1-a"
+        CLUSTER_NAME = "jenkin-hackathon-usecase"
+        ZONE = "us-central1"
     }
 
     stages {
